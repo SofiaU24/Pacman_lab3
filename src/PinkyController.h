@@ -20,21 +20,21 @@ public:
 
 // estructura de datos compartidos entre los nodos del árbol de Pinky
 struct PinkyBlackboard {
-	const GameState* gs = nullptr;
+	const GameState* gs = nullptr; 
 	std::shared_ptr<Character> character;
 	Move outMove = PASS;
 };
 
 class PinkyController: public Controller {
 	std::shared_ptr<PinkyBlackboard> bb;
-	std::shared_ptr<Composite> root;
+	std::shared_ptr<Composite> root; //selector
 public:
 	PinkyController(std::shared_ptr<Character> character);
 	virtual ~PinkyController();
 	virtual Move getMove(const GameState& game) override;
 };
 
-//frigthened?
+//condicion: frigthened? 
 class PinkyIsFrightened : public Behavior {
 	std::shared_ptr<PinkyBlackboard> bb;
 public:
@@ -42,7 +42,7 @@ public:
 	virtual Status update() override;
 };
 
-// huir en direccion valida aleatoria
+//accion: huir en direccion valida aleatoria
 class PinkyFrightened : public Behavior {
 	std::shared_ptr<PinkyBlackboard> bb;
 	std::mt19937 e; //objeto generador de numeros aleatorios
@@ -51,7 +51,7 @@ public:
 	virtual Status update() override;
 };
 
-// dentro de la ventana de Scatter del ciclo 20s chase/ 7s scatter?
+// condicoin: dentro de la ventana de Scatter del ciclo 20s chase/ 7s scatter?
 class PinkyScatterWindow : public Behavior {
 	std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
 public:
@@ -59,16 +59,16 @@ public:
 	virtual Status update() override;
 };
 
-//volver a su esquina de origen
+//accio: volver a su esquina de origen
 class PinkyScatter : public Behavior {
 	std::shared_ptr<PinkyBlackboard> bb;
-	int homeNode;
+	int homeNode; //para volver a su origen "nodo casa"
 public:
 	PinkyScatter(std::shared_ptr<PinkyBlackboard> bb);
 	virtual Status update() override;
 };
 
-// perseguir (4 nodos por delante de Pacman en la direccion que se mueve)
+//accion: perseguir (4 nodos por delante de Pacman en la direccion que se mueve)
 class PinkyChase : public Behavior {
 	std::shared_ptr<PinkyBlackboard> bb;
 public:
