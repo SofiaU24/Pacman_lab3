@@ -15,7 +15,7 @@ PinkyController::getMove(const GameState& game){
 
 	
 }*/
-//Laboratorio 5
+//Laboratorio 4
 #include "PinkyController.h"
 #include "Ghost.h"
 
@@ -25,7 +25,7 @@ Move bestMoveTowards(const GameState& gs, const std::shared_ptr<Character>& char
 		std::pair<int,int> target) {
 	int pos = character->getPos();
 	std::vector<Move> moves;
-	if (character->getDirection() == PASS) {// si pacman no se mueve, puede ir a cualquier dirección
+	if (character->getDirection() == PASS) {// si no se mueve puede ir a cualquier dirección
 		moves = gs.getMaze().getPossibleMoves(pos);
 	} else { 
 		moves = gs.getMaze().getGhostLegalMoves(pos, character->getDirection()); 
@@ -33,10 +33,10 @@ Move bestMoveTowards(const GameState& gs, const std::shared_ptr<Character>& char
 
 	Move best = PASS;
 	float minDist = -1;
-	for (auto m : moves) {// para cada movimiento posible, calcula la distancia al objetivo
+	for (auto m : moves) {// para cada movimiento posible calcula la distancia al objetivo
 		if (m == PASS) continue;
 		int neighbour = gs.getMaze().getNeighbour(pos, m);
-		if (neighbour < 0) continue;//no hay vecino = pared
+		if (neighbour < 0) continue;
 		float dist = euclid2(gs.getMaze().getNodePos(neighbour), target);
 		if (minDist == -1 || dist < minDist) {
 			minDist = dist;
@@ -47,33 +47,30 @@ Move bestMoveTowards(const GameState& gs, const std::shared_ptr<Character>& char
 }
 }
 
-PinkyController::PinkyController(std::shared_ptr<Character> character): //constructor de arbol 1 vez
+PinkyController::PinkyController(std::shared_ptr<Character> character):
 		Controller(character),
-		bb(std::make_shared<PinkyBlackboard>()),//crear el blackboardde pinky
+		bb(std::make_shared<PinkyBlackboard>()),
 		root(std::make_shared<Selector>()) {
 
 	bb->character = character;
 
-	//si está asustado, huye.
-	auto frightenedFilter = std::make_shared<Filter>(); //filtro para condicion primero y luego accion
+	auto frightenedFilter = std::make_shared<Filter>();
 	frightenedFilter->addCondition(std::make_shared<PinkyIsFrightened>(bb));
 	frightenedFilter->addAction(std::make_shared<PinkyFrightened>(bb));
 
-	//si toca ventana de Scatter, vuelve a su esquina.
 	auto scatterFilter = std::make_shared<Filter>();
 	scatterFilter->addCondition(std::make_shared<PinkyScatterWindow>());
 	scatterFilter->addAction(std::make_shared<PinkyScatter>(bb));
 
-	//raiz selector prueba en orden sus hijos y se queda con el que devuelva SUCCES, se dan en orden de prioridad
-	root->addChild(frightenedFilter); 
+	root->addChild(frightenedFilter);
 	root->addChild(scatterFilter);
-	root->addChild(std::make_shared<PinkyChase>(bb));//perwsigue a pacman si no esta en frighten ni scater
+	root->addChild(std::make_shared<PinkyChase>(bb));
 }
 
 PinkyController::~PinkyController() {
 }
 
-Move PinkyController::getMove(const GameState& game) {//actualiza el blackboard y lo deja con la forma actual del juego
+Move PinkyController::getMove(const GameState& game) {
 	bb->gs = &game;
 	root->tick();
 	return bb->outMove;
@@ -111,12 +108,12 @@ PinkyScatterWindow::PinkyScatterWindow():
 }
 
 Status PinkyScatterWindow::update() {
-	// Ciclo de 27s: 20s en Chase + 7s en Scatter (igual que el FSM de Blinky del lab 4).
+	// Ciclo de 27s: 20s en Chase + 7s en Scatter
 	std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - startTime;
 	if ((int) elapsed.count() % 27 < 7) {
-		return BH_SUCCESS; //scatter
+		return BH_SUCCESS;
 	}
-	return BH_FAILURE; //chase
+	return BH_FAILURE;
 }
 
 PinkyScatter::PinkyScatter(std::shared_ptr<PinkyBlackboard> bb):
