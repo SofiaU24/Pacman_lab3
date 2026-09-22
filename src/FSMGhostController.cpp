@@ -116,6 +116,68 @@ Move GhostScatterState::onUpdate(const GameState& gs){
 	}
 	return best;
 }
+//Para blinky y sue
+PillsEatenTransition::PillsEatenTransition(std::shared_ptr<FSMState> _next, float _eatenFraction):
+	next(_next), totalPills(-1), eatenFraction(_eatenFraction){
+}
+
+bool PillsEatenTransition::isValid(const GameState& gs){
+	int remaining = static_cast<int>(gs.getMaze().getPillPositions().size());
+	if(totalPills<0) totalPills = remaining;                        // primera llamada = total inicial
+	if(totalPills==0) return false;
+	float eaten = 1.0f - static_cast<float>(remaining)/static_cast<float>(totalPills);
+	return eaten >= eatenFraction;                                  // dispara al 70%
+}
+
+std::shared_ptr<FSMState> PillsEatenTransition::getNextState(){
+	return next;
+}
+
+
+// --- ElroyChaseState (persigue siempre + paso extra cada 150ms) --------------
+
+ElroyChaseState::ElroyChaseState(std::shared_ptr<Character> _character):
+	FSMState(_character), lastBonusMove(std::chrono::steady_clock::now()){
+}
+
+ElroyChaseState::~ElroyChaseState(){
+}
+
+void ElroyChaseState::onEnter(const GameState&){
+	lastBonusMove = std::chrono::steady_clock::now();
+}
+
+Move ElroyChaseState::onUpdate(const GameState& gs){
+	auto target = gs.getMaze().getNodePos(gs.getPacmanPos());       // siempre persigue a Pac-Man
+
+	auto bestMoveFrom = [&](int fromPos){                     // misma logica que Chase
+		std::vector<Move> moves;
+		if(character->getDirection()==PASS){
+			moves = gs.getMaze().getPossibleMoves(fromPos);
+		}else{
+			moves = gs.getMaze().getGhostLegalMoves(fromPos, character->getDirection());
+		}
+		Move best = moves[0];
+		float minDist = -1;
+		for(Move m: moves){
+			if(m==PASS) continue;
+			int vecino = gs.getMaze().getNeighbour(fromPos, m);
+			if(vecino<0) continue;
+			float dist = euclid2(gs.getMaze().getNodePos(vecino), target);
+			if(minDist==-1 || dist<minDist){ minDist = dist; best = m; }
+		}
+		return best;
+	};
+
+	auto now = std::chrono::steady_clock::now();
+	if(now - lastBonusMove >= std::chrono::milliseconds(150)){      // cada 150ms de tiempo real
+		Move bonus = bestMoveFrom(character->getPos());
+		character->move(bonus, gs.getMaze());                        // paso extra (mas velocidad)
+		lastBonusMove = now;
+	}
+
+	return bestMoveFrom(character->getPos());                       // movimiento normal del frame
+}
 
 
 ChaseScatterFSM::ChaseScatterFSM(std::shared_ptr<Character> _character):

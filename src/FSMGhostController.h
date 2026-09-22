@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Controller.h"
 #include "FSM.h"
 #include "Ghost.h"
@@ -41,6 +43,27 @@ public:
 	void onEnter(const GameState& gs) override; // reinicia el reloj 
 	Move onUpdate(const GameState& gs) override;
 	~GhostScatterState();
+};
+//Agregado para blinky y sue
+// Transicion "Chase/Scatter -> Elroy" (70% pastillas comidas, del diagrama).
+class PillsEatenTransition: public FSMTransition {
+	std::shared_ptr<FSMState> next;
+	int totalPills;
+	float eatenFraction;
+public:
+	PillsEatenTransition(std::shared_ptr<FSMState> _next, float _eatenFraction);
+	bool isValid(const GameState& gs) override;
+	std::shared_ptr<FSMState> getNextState() override;
+};
+
+// Estado "Elroy Cruise": persigue a Pac-Man de forma permanente y mas rapido.
+class ElroyChaseState: public FSMState {
+	std::chrono::steady_clock::time_point lastBonusMove;
+public:
+	ElroyChaseState(std::shared_ptr<Character> _character);
+	void onEnter(const GameState& gs) override;
+	Move onUpdate(const GameState& gs) override;
+	~ElroyChaseState();
 };
 
 class ChaseScatterFSM: public FiniteStateMachine {

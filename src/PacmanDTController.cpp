@@ -10,9 +10,6 @@ PacmanDTController::~PacmanDTController(){}
 Move
 PacmanDTController::getMove(const GameState& game){
 
-	if(character->getDirection()==PASS && game.getMaze().getPacmanStart()){
-		return RIGHT;
-    }
 	int pacmanNode = game.getPacmanPos();
 	auto pacmanCoords = game.getMaze().getNodePos(pacmanNode);
 
@@ -40,12 +37,17 @@ PacmanDTController::getMove(const GameState& game){
     }
 
 	
-    if(fantasmaComestible){
+    if(fantasmaComestible){ //ir al fantasma comestible
 		int minDist=10000000;
 		int ghostNode = game.getGhostsPos(ghostIndex);
 		auto ghostCoords = game.getMaze().getNodePos(ghostNode);
         Move minMove=character->getDirection();
-        std::vector<Move> moves=game.getMaze().getPossibleMoves(character->getPos());
+        std::vector<Move> moves;
+		if(character->getDirection()==PASS){
+			moves = game.getMaze().getPossibleMoves(character->getPos());
+		}else{
+			moves = game.getMaze().getGhostLegalMoves(character->getPos(), character->getDirection());
+		}
 		for(Move m:moves){
 			int vecino = game.getMaze().getNeighbour(pacmanNode,m);
 			
@@ -65,25 +67,35 @@ PacmanDTController::getMove(const GameState& game){
     }else{//escapar
         int maxDist=-1;
 		Move maxMove=character->getDirection();
-		std::vector<Move> moves=game.getMaze().getPossibleMoves(character->getPos());
+		std::vector<Move> moves;
+		if(character->getDirection()==PASS){
+			moves = game.getMaze().getPossibleMoves(character->getPos());
+		}else{
+			moves = game.getMaze().getGhostLegalMoves(character->getPos(), character->getDirection());
+		}
 		for(Move m:moves){
 			int vecino = game.getMaze().getNeighbour(pacmanNode,m);
 			if(vecino<0)continue;
-			//buscar distancia mas cercana de este enemigo
-			int minDistGhost = 10000000;
+			//calcular coordenadas de vecino fuera de for fantasmas para evitar usar un valor modificado en la siguiente iteracion
+			auto vecinoCoords = game.getMaze().getNodePos(vecino);
+			//buscar fantasma más cercano para este movimiento
+			int minDist= std::numeric_limits<int>::max();
 			for(int i = 0;i < 4; i++){
 				//calcular coordenadas de fantasma mas cercano para escapar
 				int ghostNode = game.getGhostsPos(i);
 				auto ghostCoords = game.getMaze().getNodePos(ghostNode);
-				auto vecinoCoords = game.getMaze().getNodePos(vecino);
 				vecinoCoords.first-=ghostCoords.first;
 				vecinoCoords.second-=ghostCoords.second;
 				int sqDist=vecinoCoords.first*vecinoCoords.first+vecinoCoords.second*vecinoCoords.second;
 
-				if(sqDist>maxDist){
-					maxDist=sqDist;
-					maxMove=m;
+				if(sqDist<minDist){
+					minDist=sqDist;
 				}
+			}
+			//elegir el movimiento que aumente la distancia al fantasma más cercano
+			if(minDist>maxDist){
+				maxDist=minDist;
+				maxMove=m;
 			}
 		}
 		return maxMove;
