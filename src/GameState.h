@@ -42,6 +42,10 @@ public:
 	int isGhostEdible(int g) const{
 		return ghosts[g]->isEdible();
 	}
+	//nuevo método, devuelve cuántos fantasmas hay en la partida
+	int getNumGhosts() const {
+		return ghosts.size();
+	}
 	int getGhostsPos(int g) const {
 		return ghosts[g]->getPos();
 	}
